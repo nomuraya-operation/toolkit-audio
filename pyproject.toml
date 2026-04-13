@@ -1,0 +1,17 @@
+[project]
+name = "toolkit-audio"
+version = "0.1.0"
+description = "音声処理ツールキット（文字起こし・話者分離）- Windows/Mac対応"
+requires-python = ">=3.11"
+dependencies = [
+    "faster-whisper>=1.0.0",
+]
+
+[tool.uv]
+dev-dependencies = []
+
+# Windows CUDA環境でのインストール:
+# uv pip install faster-whisper torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+#
+# Mac / CPU環境:
+# uv pip install faster-whisper
