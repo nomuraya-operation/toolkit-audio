@@ -353,7 +353,22 @@ def main():
     parser.add_argument("--check", action="store_true", help="環境確認のみ")
     parser.add_argument("--dry-run", action="store_true", help="対象確認のみ")
     parser.add_argument("--force", action="store_true", help="既存ファイルも上書き")
+    parser.add_argument(
+        "--rename-speakers", nargs="+", metavar="OLD=NEW",
+        help="話者ラベルを置換する（例: SPEAKER_00=shima SPEAKER_01=chisuzu）。"
+             "既存.mdファイルに対しても使用可能（--filesに.mdを渡す）。",
+    )
     args = parser.parse_args()
+
+    # --rename-speakers のパース: {"SPEAKER_00": "shima", ...}
+    speaker_map: dict[str, str] = {}
+    if args.rename_speakers:
+        for pair in args.rename_speakers:
+            if "=" not in pair:
+                print(f"エラー: --rename-speakers の形式は OLD=NEW です: {pair}")
+                sys.exit(1)
+            old, new = pair.split("=", 1)
+            speaker_map[old] = new
 
     if args.check:
         check_environment(args.device, args.model, args.compute_type)
@@ -362,6 +377,26 @@ def main():
     if not args.files:
         parser.print_help()
         sys.exit(1)
+
+    # --rename-speakers のみ: 既存 .md に対する一括置換モード
+    if speaker_map and args.files:
+        md_targets = [Path(f) for f in args.files if Path(f).suffix.lower() == ".md" and Path(f).exists()]
+        if md_targets:
+            for md in md_targets:
+                text = md.read_text(encoding="utf-8")
+                changed = False
+                for old, new in speaker_map.items():
+                    if f"**{old}**" in text:
+                        text = text.replace(f"**{old}**", f"**{new}**")
+                        changed = True
+                if changed:
+                    md.write_text(text, encoding="utf-8")
+                    print(f"置換完了: {md.name}")
+                else:
+                    print(f"変更なし: {md.name}")
+            # .md のみなら音声処理は不要
+            if all(Path(f).suffix.lower() == ".md" for f in args.files):
+                return
 
     # ファイル収集
     targets: list[Path] = []
@@ -428,6 +463,12 @@ def main():
 
             elapsed = time.time() - t0
             print(f"  完了: {elapsed:.0f}秒, {len(segments)} セグメント")
+
+            # 話者ラベル置換
+            if speaker_map:
+                for seg in segments:
+                    if "speaker" in seg and seg["speaker"] in speaker_map:
+                        seg["speaker"] = speaker_map[seg["speaker"]]
 
             out_path = resolve_output_path(audio, args.out)
             write_markdown(segments, audio, out_path)
