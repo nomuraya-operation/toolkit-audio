@@ -71,6 +71,14 @@ uv run python transcribe.py *.m4a --dry-run
 
 # 既存出力ファイルを上書き
 uv run python transcribe.py recording.m4a --force
+
+# 話者ラベルを実名に置換（文字起こし時）
+uv run python transcribe.py recording.m4a --speakers 2 \
+  --rename-speakers SPEAKER_00=shima SPEAKER_01=chisuzu
+
+# 既存.mdファイルの話者ラベルを一括置換
+uv run python transcribe.py session.md \
+  --rename-speakers SPEAKER_00=shima SPEAKER_01=chisuzu
 ```
 
 ### オプション一覧
@@ -85,6 +93,7 @@ uv run python transcribe.py recording.m4a --force
 | `--check` | — | 環境確認のみ |
 | `--dry-run` | — | 対象確認のみ |
 | `--force` | — | 既存ファイルも上書き |
+| `--rename-speakers` | — | 話者ラベル置換（`OLD=NEW`形式、複数可） |
 
 ### 出力形式
 
